@@ -15,7 +15,10 @@ def fetch_formats():
     if not video_url:
         return jsonify({'error': 'No URL provided!'})
 
-    ydl_opts = {'quiet': True}
+    ydl_opts = {
+        'quiet': True,
+        'cookies': 'youtube_cookies.txt'  # Path to cookies file
+    }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -44,7 +47,7 @@ def download():
     ydl_opts = {
         'format': format_id,
         'outtmpl': 'downloads/%(title)s.%(ext)s',
-        'cookies': 'path/to/your/youtube_cookies.txt'  # Specify the path to your cookies file
+        'cookies': 'youtube_cookies.txt'  # Path to cookies file
     }
 
     try:
