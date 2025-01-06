@@ -1,8 +1,15 @@
-from flask import Flask, render_template, request, jsonify, send_file
-import yt_dlp
-import os
+from flask import Flask, render_template, request, jsonify
+import requests
 
 app = Flask(__name__)
+
+# RapidAPI configuration
+API_URL = "https://youtube-media-downloader.p.rapidapi.com/v2/misc/list-items"
+HEADERS = {
+    "Content-Type": "application/x-www-form-urlencoded",
+    "x-rapidapi-host": "youtube-media-downloader.p.rapidapi.com",
+    "x-rapidapi-key": "db929b91c2msha86c7dcd3aca467p1f7132jsneb2a58ec28fa"  # Replace with your API key
+}
 
 @app.route('/')
 def index():
@@ -15,53 +22,22 @@ def fetch_formats():
     if not video_url:
         return jsonify({'error': 'No URL provided!'})
 
-    # yt-dlp options with cookies
-    ydl_opts = {
-        'quiet': True,
-        'noplaylist': True,
-        'cookies': 'youtube_cookies.txt',  # Path to the cookies file
-    }
+    # POST data
+    data = {"url": video_url}
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=False)
-            formats = [
-                {
-                    'format_id': f['format_id'],
-                    'resolution': f.get('height', 'Audio') if f.get('height') else 'Audio',
-                    'extension': f['ext'],
-                    'filesize': f.get('filesize', 'Unknown'),
-                }
-                for f in info['formats'] if f.get('filesize') is not None
-            ]
-            return jsonify({'formats': formats})
-    except Exception as e:
-        return jsonify({'error': f"Failed to fetch formats: {str(e)}"})
+        # Send POST request to RapidAPI
+        response = requests.post(API_URL, headers=HEADERS, data=data)
+        response.raise_for_status()  # Raise exception for HTTP errors
+        video_data = response.json()
 
-@app.route('/download', methods=['POST'])
-def download():
-    video_url = request.form.get('url')
-    format_id = request.form.get('format_id')
-
-    if not video_url or not format_id:
-        return "Error: URL or Format ID missing!"
-
-    # yt-dlp options with cookies
-    ydl_opts = {
-        'format': format_id,
-        'outtmpl': 'downloads/%(title)s.%(ext)s',
-        'cookies': 'youtube_cookies.txt',  # Path to the cookies file
-    }
-
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            file_path = ydl.prepare_filename(info)
-
-            return send_file(file_path, as_attachment=True)
-
-    except Exception as e:
-        return f"Error: {str(e)}"
+        # Handle API response
+        if "error" in video_data:
+            return jsonify({'error': video_data['error']})
+        
+        return jsonify({'formats': video_data})  # Return formats to the frontend
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)
