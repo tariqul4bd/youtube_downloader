@@ -15,11 +15,11 @@ def fetch_formats():
     if not video_url:
         return jsonify({'error': 'No URL provided!'})
 
-    # yt-dlp options to focus on publicly accessible formats
+    # yt-dlp options with cookies
     ydl_opts = {
         'quiet': True,
-        'noplaylist': True,  # Avoid fetching entire playlists
-        'extract_flat': False,  # Avoid metadata-only extraction
+        'noplaylist': True,
+        'cookies': 'youtube_cookies.txt',  # Path to the cookies file
     }
 
     try:
@@ -32,8 +32,7 @@ def fetch_formats():
                     'extension': f['ext'],
                     'filesize': f.get('filesize', 'Unknown'),
                 }
-                for f in info['formats']
-                if f.get('acodec') != 'none' and f.get('vcodec') != 'none'  # Ensure both audio and video are included
+                for f in info['formats'] if f.get('filesize') is not None
             ]
             return jsonify({'formats': formats})
     except Exception as e:
@@ -47,13 +46,11 @@ def download():
     if not video_url or not format_id:
         return "Error: URL or Format ID missing!"
 
+    # yt-dlp options with cookies
     ydl_opts = {
         'format': format_id,
         'outtmpl': 'downloads/%(title)s.%(ext)s',
-        'merge_output_format': 'mp4',  # Ensure final file is MP4
-        'noplaylist': True,  # Avoid downloading playlists
-        'no_warnings': True,  # Suppress warnings for cleaner logs
-        'ignoreerrors': True,  # Ignore minor errors and continue
+        'cookies': 'youtube_cookies.txt',  # Path to the cookies file
     }
 
     try:
