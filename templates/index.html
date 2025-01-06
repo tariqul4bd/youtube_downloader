@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Downloader</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card shadow-lg p-4">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">YouTube Video Downloader</h1>
+
+                <!-- Step 1: Enter URL -->
+                <form id="fetch-formats-form">
+                    <div class="mb-3">
+                        <label for="url" class="form-label">YouTube Video URL</label>
+                        <input type="url" id="url" name="url" class="form-control" placeholder="Enter YouTube video link" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Fetch Formats</button>
+                </form>
+
+                <!-- Step 2: Select Format -->
+                <div id="format-selection" class="mt-4 d-none">
+                    <h5>Available Formats:</h5>
+                    <ul id="formats-list" class="list-group"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const fetchForm = document.getElementById('fetch-formats-form');
+        const formatSelection = document.getElementById('format-selection');
+        const formatsList = document.getElementById('formats-list');
+
+        fetchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const url = document.getElementById('url').value;
+
+            const response = await fetch('/fetch-formats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ url }),
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            formatsList.innerHTML = '';
+            data.formats.forEach((format) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    ${format.resolution} (${format.extension}) - ${format.filesize !== 'Unknown' ? (format.filesize / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown'}
+                    <button class="btn btn-sm btn-primary download-btn" data-format-id="${format.format_id}">Download</button>
+                `;
+                formatsList.appendChild(li);
+            });
+
+            formatSelection.classList.remove('d-none');
+
+            document.querySelectorAll('.download-btn').forEach((btn) =>
+                btn.addEventListener('click', async () => {
+                    const formatId = btn.getAttribute('data-format-id');
+                    const downloadResponse = await fetch('/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ url, format_id: formatId }),
+                    });
+
+                    if (downloadResponse.ok) {
+                        const blob = await downloadResponse.blob();
+                        const downloadUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = downloadUrl;
+                        a.download = '';
+                        a.click();
+                    } else {
+                        alert('Error downloading the file.');
+                    }
+                })
+            );
+        });
+    </script>
+</body>
+</html>
