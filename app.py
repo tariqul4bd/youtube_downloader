@@ -2,16 +2,11 @@ from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 import os
 
-
 app = Flask(__name__)
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
-if __name__ == '__main__':
-    app.run()
-
 
 @app.route('/fetch-formats', methods=['POST'])
 def fetch_formats():
@@ -49,6 +44,7 @@ def download():
     ydl_opts = {
         'format': format_id,
         'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'cookies': 'path/to/your/youtube_cookies.txt'  # Specify the path to your cookies file
     }
 
     try:
