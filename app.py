@@ -1,15 +1,13 @@
 from flask import Flask, render_template, request, jsonify
-import requests
+import http.client
+import os
+import json
 
 app = Flask(__name__)
 
-# RapidAPI configuration
-API_URL = "https://youtube-media-downloader.p.rapidapi.com/v2/misc/list-items"
-HEADERS = {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "x-rapidapi-host": "youtube-media-downloader.p.rapidapi.com",
-    "x-rapidapi-key": "db929b91c2msha86c7dcd3aca467p1f7132jsneb2a58ec28fa"  # Replace with your API key
-}
+# Secure API Key (Set this in Render Environment Variables)
+API_KEY = os.getenv("RAPIDAPI_KEY", "your-fallback-api-key")
+API_HOST = "youtube-media-downloader.p.rapidapi.com"
 
 @app.route('/')
 def index():
@@ -22,22 +20,37 @@ def fetch_formats():
     if not video_url:
         return jsonify({'error': 'No URL provided!'})
 
-    # POST data
-    data = {"url": video_url}
-
     try:
-        # Send POST request to RapidAPI
-        response = requests.post(API_URL, headers=HEADERS, data=data)
-        response.raise_for_status()  # Raise exception for HTTP errors
-        video_data = response.json()
+        # Establish API connection
+        conn = http.client.HTTPSConnection(API_HOST)
+        payload = f"url={video_url}"  # Sending video URL in request
 
-        # Handle API response
+        headers = {
+            "x-rapidapi-key": API_KEY,
+            "x-rapidapi-host": API_HOST,
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        # Send API request
+        conn.request("POST", "/v2/misc/list-items", payload, headers)
+        res = conn.getresponse()
+        data = res.read().decode("utf-8")
+
+        # Parse JSON response
+        video_data = json.loads(data)
+
+        # Debugging output (Remove this in production)
+        print("API Response:", video_data)
+
+        # Check if response contains an error
         if "error" in video_data:
             return jsonify({'error': video_data['error']})
-        
-        return jsonify({'formats': video_data})  # Return formats to the frontend
-    except requests.exceptions.RequestException as e:
-        return jsonify({'error': str(e)})
+
+        return jsonify({'formats': video_data})  # Return formats to frontend
+
+    except Exception as e:
+        print(f"API Error: {e}")  # Debugging
+        return jsonify({'error': 'Failed to fetch video formats. Please try again later.'})
 
 if __name__ == '__main__':
     app.run(debug=True)
