@@ -5,7 +5,7 @@ import json
 
 app = Flask(__name__)
 
-# Load API Key from Render Environment Variable
+# Load API Key from Render Environment Variables
 API_KEY = os.getenv("RAPIDAPI_KEY")  # Securely fetch API Key
 API_HOST = "youtube-media-downloader.p.rapidapi.com"
 
@@ -23,10 +23,10 @@ def fetch_formats():
     try:
         # Establish API connection
         conn = http.client.HTTPSConnection(API_HOST)
-        payload = f"url={video_url}"
+        payload = f"url={video_url}&nextToken="  # Ensure nextToken is sent
 
         headers = {
-            "x-rapidapi-key": API_KEY,  # Using the secure API Key from Render
+            "x-rapidapi-key": API_KEY,
             "x-rapidapi-host": API_HOST,
             "Content-Type": "application/x-www-form-urlencoded"
         }
@@ -43,8 +43,8 @@ def fetch_formats():
         print("API Response:", video_data)
 
         # Check if response contains an error
-        if "error" in video_data:
-            return jsonify({'error': video_data['error']})
+        if not video_data.get("status", False):  # Check if 'status' is False
+            return jsonify({'error': video_data.get("reason", "Unknown error")})
 
         return jsonify({'formats': video_data})  # Return formats to frontend
 
