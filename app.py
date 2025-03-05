@@ -23,7 +23,9 @@ def fetch_formats():
     try:
         # Establish API connection
         conn = http.client.HTTPSConnection(API_HOST)
-        payload = f"url={video_url}&nextToken="  # Ensure nextToken is sent
+
+        # If nextToken is required, provide a default value or remove it
+        payload = f"url={video_url}&nextToken="  # You can test removing &nextToken=
 
         headers = {
             "x-rapidapi-key": API_KEY,
