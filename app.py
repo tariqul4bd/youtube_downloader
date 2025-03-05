@@ -53,4 +53,4 @@ def fetch_formats():
 
     except Exception as e:
         print(f"API Error: {e}")  # Debugging
-        return jsonify({'error': 'Failed to fetch video formats. Please try again later
+        return jsonify({'error': 'Failed to fetch video formats. Please try again later.'})
