@@ -24,8 +24,9 @@ def fetch_formats():
         # Establish API connection
         conn = http.client.HTTPSConnection(API_HOST)
 
-        # If nextToken is required, provide a default value or remove it
-        payload = f"url={video_url}&nextToken="  # You can test removing &nextToken=
+        # Construct payload dynamically (Do NOT send empty nextToken)
+        payload_data = {"url": video_url}
+        payload = "&".join([f"{key}={value}" for key, value in payload_data.items()])
 
         headers = {
             "x-rapidapi-key": API_KEY,
@@ -52,7 +53,4 @@ def fetch_formats():
 
     except Exception as e:
         print(f"API Error: {e}")  # Debugging
-        return jsonify({'error': 'Failed to fetch video formats. Please try again later.'})
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        return jsonify({'error': 'Failed to fetch video formats. Please try again later
